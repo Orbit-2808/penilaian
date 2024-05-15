@@ -1,8 +1,13 @@
 import os
 import csv
+import logging
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 import zipfile
+
+def setup_logging(log_file):
+    logging.basicConfig(filename=log_file, level=logging.ERROR,
+                        format='%(asctime)s - %(levelname)s - %(message)s')
 
 def extract_zip(zip_file, extract_to):
     with zipfile.ZipFile(zip_file, 'r') as zip_ref:
@@ -12,7 +17,9 @@ def download_from_drive(drive, file_id, filename):
     file_obj = drive.CreateFile({'id': file_id})
     file_obj.GetContentFile(filename)
 
-def extract_drive_links(csv_file, download_dir, extract_dir):
+def extract_drive_links(csv_file, download_dir, extract_dir, log_file):
+    setup_logging(log_file)
+    
     # Authenticate and create GoogleDrive instance
     gauth = GoogleAuth()
     gauth.LocalWebserverAuth()
@@ -43,16 +50,19 @@ def extract_drive_links(csv_file, download_dir, extract_dir):
                 extract_zip(filename, extract_folder)
                 print(f"Extracted: {filename} to {extract_folder}")
             except Exception as e:
-                print(f"Error occurred in CSV line {row_number}: {e}")
+                error_message = f"Error occurred in CSV line {row_number}: {e}"
+                print(error_message)
+                logging.error(error_message)
 
 # Define directories for downloading and extracting files
 download_directory = 'downloads'
 extract_directory = 'extracted'
+log_file = 'error.log'
 
 # Create directories if they don't exist
 os.makedirs(download_directory, exist_ok=True)
 os.makedirs(extract_directory, exist_ok=True)
 
 # Replace 'input.csv' with the path to your CSV file
-extract_drive_links('input.csv', download_directory, extract_directory)
+extract_drive_links('input.csv', download_directory, extract_directory, log_file)
 
